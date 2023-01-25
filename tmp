@@ -1,0 +1,16 @@
+import {CryptoKey, JsonWebKey, JsonWebSignature, SigningAlgorithm} from 'crypto';
+
+
+export function JWS(payload: any) {
+const header: JsonWebKey = {alg: 'HS256', typ: 'JWT'};
+
+function generateJWS(secret: CryptoKey, header: JsonWebKey, payload: object): string {
+    const data = `${base64UrlEncode(JSON.stringify(header))}.${base64UrlEncode(JSON.stringify(payload))}`;
+    const signature = new Uint8Array(secret.sign(data));
+    return `${data}.${base64UrlEncode(signature)}`;
+}
+
+const secret = new CryptoKey(...); // your secret here
+const jws = generateJWS(secret, header, payload);
+console.log(jws);
+}

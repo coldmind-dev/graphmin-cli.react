@@ -5,21 +5,6 @@
 
 import { container } from 'tsyringe';
 
-interface ICmComponent {
-	name: string;
-}
-
-abstract class CmComponent implements ICmComponent {
-	name: string;
-	constructor(name: string) {
-		this.name = name;
-	}
-}
-
-// Decorator
-function cmComponent(target: any) {
-	container.register(`${target.name}`, { useClass: target });
-}
 
 // Usage
 @cmComponent

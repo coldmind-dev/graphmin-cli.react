@@ -1,3 +1,4 @@
+import { AxiosResponse }        from "axios";
 import axios, { AxiosInstance } from 'axios';
 
 /**
@@ -5,22 +6,36 @@ import axios, { AxiosInstance } from 'axios';
  */
 export class CmApiClient {
 	private axios: AxiosInstance;
+	private axios: AxiosInstance;
+	private responseSubject = new Subject();
 
-	/**
-	 * Creates an instance of CmApiClient.
-	 */
 	constructor() {
 		this.axios = axios.create();
 		this.axios.interceptors.response.use(
 			(response) => {
-				// Additional logic can be added here to handle the response
+				this.responseSubject.next(response);
 				return response;
 			},
 			(error) => {
-				// Additional logic can be added here to handle errors
+				this.responseSubject.error(error);
 				return Promise.reject(error);
 			}
 		);
+	}
+
+	/**
+	 * Wrapper function for axios.get that tags the request
+	 * @param {string} url - The URL to send the request to.
+	 * @param {object} config - Additional configurations to be sent with the request.
+	 * @param {string} tag - The tag for the request
+	 * @returns {Promise<AxiosResponse>} - A promise that resolves to the server's response.
+	 */
+	public async getAsync(url: string, config = {}, tag: string) {
+		config.headers = {
+			...config.headers,
+			'X-Request-Tag': tag,
+		};
+		return this.axios.get(url, config);
 	}
 
 	/**
@@ -64,19 +79,37 @@ export class CmApiClient {
 	public async delete(url: string, config = {}) {
 		return this.axios.delete(url, config);
 	}
+
+	/**
+	 * Wrapper function for axios.get that tags the request
+	 * @param {string} url - The URL to send the request to.
+	 * @param {object} config - Additional configurations to be sent with the request.
+	 * @param {string} tag - The tag for the request
+	 * @returns {Promise<AxiosResponse>} - A promise that resolves to the server's response.
+	 */
+	public async get(url: string, config = {}, tag: string) {
+		config.headers = {
+			...config.headers,
+			'X-Request-Tag': tag,
+		};
+		return this.axios.get(url, config);
+	}
+
+	/**
+	 * Async method that waits for a response with a specific tag
+	 * @param {string} tag - The tag for the request
+	 * @returns {Promise<AxiosResponse>} - A promise that resolves to the server's response.
+	 */
+	public async waitForResponse(tag: string): Promise<AxiosResponse> {
+		return new Promise((resolve, reject) => {
+			const subscription = this.responseSubject.subscribe((response) => {
+				if (response.headers['x-request-tag'] === tag) {
+					subscription.unsubscribe();
+					resolve(response);
+				}
+			}, (error) => {
+				reject(error);
+			});
+		});
+	}
 }
-
-const cmApiClient = new CmApiClient();
-
-/**
-
-Example usage of the CmApiClient class
- */
-cmApiClient
-	.get('https://jsonplaceholder.typicode.com/todos/1')
-	.then((response) => {
-		console.log(response.data);
-	})
-	.catch((error) => {
-		console.log(error);
-	});
